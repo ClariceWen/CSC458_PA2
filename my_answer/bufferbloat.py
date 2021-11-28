@@ -106,6 +106,7 @@ def start_qmon(iface, interval_sec=0.1, outfile="q.txt"):
     return monitor
 
 def start_iperf(net):
+    h1 = net.get('h1')
     h2 = net.get('h2')
     print "Starting iperf server..."
     # For those who are curious about the -w 16m parameter, it ensures
