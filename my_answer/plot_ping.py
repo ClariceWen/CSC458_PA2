@@ -79,31 +79,31 @@ else:
     plt.show()
 
 
-# def parse_download_time(fname):
-#     """parse into float"""
-#     download_times = []
-#     lines = open(fname).readlines()
-#     num = 0
-#     for line in lines:
-#         download_times.append(float(line))
-#     return download_times
+def parse_download_time(fname):
+    """parse into float"""
+    download_times = []
+    lines = open(fname).readlines()
+    num = 0
+    for line in lines:
+        download_times.append(float(line))
+    return download_times
 
-# m.rc('figure', figsize=(16, 6))
-# fig = figure()
-# ax = fig.add_subplot(111)
-# for i, f in enumerate(args.dfiles):
-#     data = parse_download_time(f)
-#     if len(data) == 0:
-#         print >>sys.stderr, "%s: error: no download time data"%(sys.argv[0])
-#         sys.exit(1)
+m.rc('figure', figsize=(16, 6))
+fig = figure()
+ax = fig.add_subplot(111)
+for i, f in enumerate(args.dfiles):
+    data = parse_download_time(f)
+    if len(data) == 0:
+        print >>sys.stderr, "%s: error: no download time data"%(sys.argv[0])
+        sys.exit(1)
 
-#     ax.scatter(range(1, len(data) + 1), data, lw=2)
-#     ax.xaxis.set_major_locator(MaxNLocator(4))
+    ax.scatter(range(1, len(data) + 1), data, lw=2)
+    ax.xaxis.set_major_locator(MaxNLocator(4))
 
-# plt.ylabel("(curl) Download Time (ms)")
-# plt.grid(True)
+plt.ylabel("(curl) Download Time (ms)")
+plt.grid(True)
 
-# if args.dout:
-#     plt.savefig(args.dout)
-# else:
-#     plt.show()
+if args.dout:
+    plt.savefig(args.dout)
+else:
+    plt.show()

@@ -230,6 +230,16 @@ def bufferbloat():
     std = math.sqrt(mid)
     print std
 
+    curl_times = [float(i.communicate()[0]) for i in popens]
+    
+    with open('%s/download.txt' % (args.dir), 'w') as f:
+        for ctime in curl_times:
+            f.write("%s\n" % ctime)
+        print "done writing download times for %s" % args.dir
+
+    print "mean = %.5f, stddev = %.5f" % (avg(curl_times), stdev(curl_times))
+
+
     stop_tcpprobe()
     if qmon is not None:
         qmon.terminate()

@@ -41,11 +41,6 @@ parser.add_argument('--every',
                     default=1,
                     type=int)
 
-parser.add_argument('--wdownload',
-                    help="Set to 1 if downloading webpage, else 0",
-                    required=False,
-                    default=0,
-                    type=int)
 
 args = parser.parse_args()
 
@@ -79,8 +74,10 @@ for i, f in enumerate(args.files):
     qlens = qlens[::args.every]
     ax.scatter(xaxis, qlens, label=args.legend[i], **get_style(i))
     ax.xaxis.set_major_locator(MaxNLocator(4))
-
-plt.ylabel("Packets")
+if args.wdownload == 1:
+    plt.ylabel("Download time")
+else:
+    plt.ylabel("Packets")
 plt.grid(True)
 plt.xlabel("Seconds")
 
