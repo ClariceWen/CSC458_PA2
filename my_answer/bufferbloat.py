@@ -194,6 +194,7 @@ def bufferbloat():
     # spawned on host h1 (not from google!)
     # Hint: have a separate function to do this and you may find the
     # loop below useful.
+    popens = []
     h1 = net.get('h1')
     h2 = net.get('h2')
     IP1 = h1.IP()
@@ -203,9 +204,10 @@ def bufferbloat():
     while True:
         # do the measurement (say) 3 times.
         line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index.html" % IP1, shell=True).stdout.readline()
+        popens.append(line)
         numberOfFetch = numberOfFetch + 1
         fetchTime.write(line + "\r\n")
-        sleep(5)
+        sleep(2)
         now = time()
         delta = now - start_time
         if delta > args.time:
