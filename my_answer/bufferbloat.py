@@ -107,6 +107,11 @@ def start_qmon(iface, interval_sec=0.1, outfile="q.txt"):
     monitor.start()
     return monitor
 
+def start_iperf_process(net):
+    iperf_process = Process(target=start_iperf, args=(net,))
+    iperf_process.start()
+    return iperf_process
+
 def start_iperf(net):
     h1 = net.get('h1')
     h2 = net.get('h2')
@@ -126,6 +131,11 @@ def start_webserver(net):
     sleep(1)
     return [proc]
 
+def start_ping_process(net):
+    ping_process = Process(target=start_ping, args=(net,))
+    ping_process.start()
+    return ping_process
+
 def start_ping(net):
     # TODO: Start a ping train from h1 to h2 (or h2 to h1, does it
     # matter?)  Measure RTTs every 0.1 second.  Read the ping man page
@@ -140,8 +150,34 @@ def start_ping(net):
     h1 = net.get('h1')
     h2 = net.get('h2')
     IP2 = h2.IP()
-    # popen = h1.popen("echo '' > %s/ping.txt"%(args.dir), shell=True)
-    h1.popen("ping -i 0.1 %s > %s/ping.txt" % (IP2, args.dir), shell=True)
+    popen = h1.popen("echo '' > %s/ping.txt"%(args.dir), shell=True)
+    # So the pings keep getting sent over the whole time interval
+    num_pings = args.time * 10
+    
+    popen2 = h1.popen("ping -i 0.1 %s > %s/ping.txt" % (num_pings, IP2, args.dir), shell=True)
+
+def measure_fetch_webpage_time(net, num_samples):
+    h1 = net.get('h1')
+    h2 = net.get('h2')
+    time_to_fetch = []
+    command = "curl -o /dev/null -s -w %{time_total} " + str(h1.IP() + "/http/index.html")
+    for i in range(num_samples):
+        popen1 = h2.popen(command, shell=True)  # Check if it should be .htm
+        total_time = float(popen1.communicate()[0])  # Get the value of stdout
+        time_to_fetch.append(total_time)
+    return time_to_fetch
+
+def write_webpage_download_time_to_file(download_times):
+    # Download times should be a list of list(seconds, download time)
+    f = open(args.dir + "/webpage_download.txt", "w")
+    f.write("") #Delete previous content
+    f.close()
+    f = open(args.dir + "/webpage_download.txt", "a")
+
+    for entry in download_times:
+        f.write(str(entry[0]) + "," + str(entry[1]) +"\n")
+    return
+
 
 def bufferbloat():
     if not os.path.exists(args.dir):
@@ -162,7 +198,7 @@ def bufferbloat():
 
     # Start all the monitoring processes
     start_tcpprobe("cwnd.txt")
-    start_ping(net)
+    ping_process = start_ping_process(net)
 
     # TODO: Start monitoring the queue sizes.  Since the switch I
     # created is "s0", I monitor one of the interfaces.  Which
@@ -177,8 +213,7 @@ def bufferbloat():
 
     # TODO: Start iperf, webservers, etc.
     # start_iperf(net)
-    start_iperf(net)
-    start_ping(net)
+    iperf_process = start_iperf_process(net)
     start_webserver(net)
 
     # Hint: The command below invokes a CLI which you can use to
@@ -194,57 +229,37 @@ def bufferbloat():
     # spawned on host h1 (not from google!)
     # Hint: have a separate function to do this and you may find the
     # loop below useful.
-    popens = []
-    h1 = net.get('h1')
-    h2 = net.get('h2')
-    IP1 = h1.IP()
-    fetchTime = open("%s/fetchTime" % args.dir, 'w')
+
     start_time = time()
-    numberOfFetch = 0
+    webpage_transfer_times = []
+    webpage_transfer_times_to_plot = []
     while True:
         # do the measurement (say) 3 times.
-        line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index.html" % IP1, shell=True).stdout.readline()
-        popens.append(line)
-        numberOfFetch = numberOfFetch + 1
-        fetchTime.write(line + "\r\n")
-        sleep(2)
+        sleep(1)
         now = time()
+        time_to_download = measure_fetch_webpage_time(net, 1)  # Take one sample of how long it takes to get the page
+        webpage_transfer_times += time_to_download
+        webpage_transfer_times_to_plot.append([now, time_to_download[0]])
         delta = now - start_time
         if delta > args.time:
             break
         print "%.1fs left..." % (args.time - delta)
-    fetchTime.close()
-
 
     # TODO: compute average (and standard deviation) of the fetch
     # times.  You don't need to plot them.  Just note it in your
     # README and explain.
-    fetchTime = open("%s/fetchTime" % args.dir, 'r')
-    fetchTimeData = []
-    for line in fetchTime:
-        fetchTimeData = fetchTimeData + [float(line)]
-    
-    average = sum(fetchTimeData) * 1.0 / len(fetchTimeData)
-    print average
-
-    var = map(lambda x: (x-average)**2, fetchTimeData)
-    mid = sum(var) * 1.0 / len(var)
-    std = math.sqrt(mid)
-    print std
-
-    curl_times = [float(i.communicate()[0]) for i in popens]
-    
-    with open('%s/download.txt' % (args.dir), 'w') as f:
-        for ctime in curl_times:
-            f.write("%s\n" % ctime)
-        print "done writing download times for %s" % args.dir
-
-    print "mean = %.5f, stddev = %.5f" % (avg(curl_times), stdev(curl_times))
-
+    avg = sum(webpage_transfer_times) / len(webpage_transfer_times)
+    std_dev = stdev(webpage_transfer_times)
+    print("The avg is %d and std dev is", avg, std_dev)
+    write_webpage_download_time_to_file(webpage_transfer_times_to_plot)
 
     stop_tcpprobe()
     if qmon is not None:
         qmon.terminate()
+    if iperf_process is not None:
+        iperf_process.terminate()
+    if ping_process is not None:
+        ping_process.terminate()
     net.stop()
     # Ensure that all processes you create within Mininet are killed.
     # Sometimes they require manual killing.

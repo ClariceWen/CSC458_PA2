@@ -24,16 +24,6 @@ parser.add_argument('--out', '-o',
                     help="Output png file for the plot.",
                     default=None) # Will show the plot
 
-parser.add_argument('--dfiles', '-df',
-                    help="download output files to plot",
-                    required=True,
-                    action="store",
-                    nargs='+')
-
-parser.add_argument('--dout', '-do',
-                    help="Output png file for the download plot.",
-                    default=None) # Will show the plot
-
 args = parser.parse_args()
 
 def parse_ping(fname):
@@ -47,10 +37,14 @@ def parse_ping(fname):
             rtt = line.split(' ')[-2]
             rtt = rtt.split('=')[1]
             rtt = float(rtt)
+            sum += rtt
+            count += 1
             ret.append([num, rtt])
             num += 1
         except:
             break
+    print "AVERAGE PING TIME IS: "
+    print sum/count
     return ret
 
 m.rc('figure', figsize=(16, 6))
