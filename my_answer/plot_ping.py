@@ -30,6 +30,8 @@ def parse_ping(fname):
     ret = []
     lines = open(fname).readlines()
     num = 0
+    sum = 0
+    count = 0
     for line in lines:
         if 'bytes from' not in line:
             continue
