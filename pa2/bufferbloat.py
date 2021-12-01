@@ -156,7 +156,7 @@ def start_ping(net):
     
     popen2 = h1.popen("ping -i 0.1 %s > %s/ping.txt" % (num_pings, IP2, args.dir), shell=True)
 
-def measure_fetch_webpage_time(net, num_samples):
+def fetch_time(net, num_samples):
     h1 = net.get('h1')
     h2 = net.get('h2')
     time_to_fetch = []
@@ -167,7 +167,7 @@ def measure_fetch_webpage_time(net, num_samples):
         time_to_fetch.append(total_time)
     return time_to_fetch
 
-def write_webpage_download_time_to_file(download_times):
+def download_file(download_times):
     # Download times should be a list of list(seconds, download time)
     f = open(args.dir + "/webpage_download.txt", "w")
     f.write("") #Delete previous content
@@ -231,15 +231,15 @@ def bufferbloat():
     # loop below useful.
 
     start_time = time()
-    webpage_transfer_times = []
-    webpage_transfer_times_to_plot = []
+    w_time = []
+    w_time_to_plot = []
     while True:
         # do the measurement (say) 3 times.
         sleep(1)
         now = time()
-        time_to_download = measure_fetch_webpage_time(net, 1)  # Take one sample of how long it takes to get the page
-        webpage_transfer_times += time_to_download
-        webpage_transfer_times_to_plot.append([now, time_to_download[0]])
+        download_t = fetch_time(net, 1)  # Take one sample of how long it takes to get the page
+        w_time += download_t
+        w_time_to_plot.append([now, download_t[0]])
         delta = now - start_time
         if delta > args.time:
             break
@@ -248,10 +248,10 @@ def bufferbloat():
     # TODO: compute average (and standard deviation) of the fetch
     # times.  You don't need to plot them.  Just note it in your
     # README and explain.
-    avg = sum(webpage_transfer_times) / len(webpage_transfer_times)
-    std_dev = stdev(webpage_transfer_times)
+    avg = sum(w_time) / len(w_time)
+    std_dev = stdev(w_time)
     print("The avg is %d and std dev is", avg, std_dev)
-    write_webpage_download_time_to_file(webpage_transfer_times_to_plot)
+    download_file(w_time_to_plot)
 
     stop_tcpprobe()
     if qmon is not None:
